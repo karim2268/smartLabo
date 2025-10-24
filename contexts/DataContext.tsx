@@ -93,13 +93,18 @@ type Action =
     | { type: 'ADD_RESERVATION'; payload: Reservation }
     | { type: 'UPDATE_RESERVATION_STATUS'; payload: { id: string; status: ReservationStatus } }
     | { type: 'ADD_PERSONNEL'; payload: Personnel }
+    | { type: 'UPDATE_PERSONNEL'; payload: Personnel }
+    | { type: 'DELETE_PERSONNEL'; payload: string }
     | { type: 'UPDATE_CONFIG'; payload: Configuration }
     | { type: 'ADD_ROOM'; payload: Room }
     | { type: 'UPDATE_ROOM'; payload: Room }
     | { type: 'DELETE_ROOM'; payload: string }
     | { type: 'ADD_LAB'; payload: Lab }
     | { type: 'UPDATE_LAB'; payload: Lab }
-    | { type: 'DELETE_LAB'; payload: string };
+    | { type: 'DELETE_LAB'; payload: string }
+    | { type: 'ADD_ORDER'; payload: Order }
+    | { type: 'UPDATE_ORDER'; payload: Order }
+    | { type: 'DELETE_ORDER'; payload: string };
 
 // Reducer function
 const dataReducer = (state: AppState, action: Action): AppState => {
@@ -132,6 +137,18 @@ const dataReducer = (state: AppState, action: Action): AppState => {
             };
         case 'ADD_PERSONNEL':
             return { ...state, personnel: [...state.personnel, action.payload] };
+        case 'UPDATE_PERSONNEL':
+            return {
+                ...state,
+                personnel: state.personnel.map(p =>
+                    p.id === action.payload.id ? action.payload : p
+                ),
+            };
+        case 'DELETE_PERSONNEL':
+            return {
+                ...state,
+                personnel: state.personnel.filter(p => p.id !== action.payload),
+            };
         case 'UPDATE_CONFIG':
             return { ...state, configuration: action.payload };
         case 'ADD_ROOM':
@@ -157,6 +174,18 @@ const dataReducer = (state: AppState, action: Action): AppState => {
             return {
                 ...state,
                 labs: state.labs.filter(l => l.id !== action.payload),
+            };
+        case 'ADD_ORDER':
+            return { ...state, orders: [action.payload, ...state.orders] };
+        case 'UPDATE_ORDER':
+            return {
+                ...state,
+                orders: state.orders.map(o => o.id === action.payload.id ? action.payload : o),
+            };
+        case 'DELETE_ORDER':
+            return {
+                ...state,
+                orders: state.orders.filter(o => o.id !== action.payload),
             };
         default:
             return state;

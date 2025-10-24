@@ -1,45 +1,159 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { Personnel, PersonnelRole } from '../../types';
 import Modal from '../ui/Modal';
+import FormField from '../ui/FormField';
+import FormActions from '../ui/FormActions';
+
+// Form component for adding/editing personnel
+interface PersonnelFormProps {
+    personnel: Personnel | null;
+    activeRole: PersonnelRole;
+    onDone: () => void;
+}
+
+const PersonnelForm: React.FC<PersonnelFormProps> = ({ personnel, activeRole, onDone }) => {
+    const { dispatch } = useData();
+    const [formData, setFormData] = useState({ nom: '', labo: '' });
+
+    useEffect(() => {
+        if (personnel) {
+            setFormData({ nom: personnel.nom, labo: personnel.labo });
+        } else {
+            setFormData({ nom: '', labo: '' });
+        }
+    }, [personnel]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.nom || !formData.labo) {
+            alert("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        if (personnel) {
+            // Update existing personnel
+            dispatch({
+                type: 'UPDATE_PERSONNEL',
+                payload: { ...personnel, ...formData }
+            });
+        } else {
+            // Add new personnel
+            dispatch({
+                type: 'ADD_PERSONNEL',
+                payload: { id: `per-${Date.now()}`, role: activeRole, ...formData }
+            });
+        }
+        onDone();
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <FormField label="Nom" htmlFor="nom">
+                <input
+                    type="text"
+                    id="nom"
+                    name="nom"
+                    value={formData.nom}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
+                    required
+                />
+            </FormField>
+            <FormField label="Laboratoire / Matière" htmlFor="labo">
+                <input
+                    type="text"
+                    id="labo"
+                    name="labo"
+                    value={formData.labo}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
+                    placeholder={activeRole === PersonnelRole.TECHNICIEN ? "Ex: Physique-Chimie" : "Ex: SVT"}
+                    required
+                />
+            </FormField>
+            <FormActions onCancel={onDone} submitLabel={personnel ? "Mettre à jour" : "Ajouter"} />
+        </form>
+    );
+};
+
 
 const Personnel: React.FC = () => {
     const { state, dispatch } = useData();
     const [activeTab, setActiveTab] = useState<PersonnelRole>(PersonnelRole.TECHNICIEN);
+    
+    // Modal states
     const [isConfigModalOpen, setConfigModalOpen] = useState(false);
+    const [isFormModalOpen, setFormModalOpen] = useState(false);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
-    const [newPersonnel, setNewPersonnel] = useState({ nom: '', role: activeTab, labo: ''});
+    // Data for modals
+    const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null);
+    const [personnelToDelete, setPersonnelToDelete] = useState<Personnel | null>(null);
+
+    // Config state
     const [config, setConfig] = useState(state.configuration);
 
     const filteredPersonnel = useMemo(() => {
         return state.personnel.filter(p => p.role === activeTab);
     }, [state.personnel, activeTab]);
 
-    const handleAddPersonnel = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newPersonnel.nom || !newPersonnel.labo) {
-            alert("Veuillez remplir tous les champs.");
-            return;
-        }
-        dispatch({
-            type: 'ADD_PERSONNEL',
-            payload: { ...newPersonnel, id: `p-${Date.now()}` }
-        });
-        setNewPersonnel({ nom: '', role: activeTab, labo: '' });
+    // Handlers for Add/Edit Modal
+    const handleOpenAddModal = () => {
+        setEditingPersonnel(null);
+        setFormModalOpen(true);
     };
 
+    const handleOpenEditModal = (p: Personnel) => {
+        setEditingPersonnel(p);
+        setFormModalOpen(true);
+    };
+    
+    const handleCloseFormModal = () => {
+        setFormModalOpen(false);
+        setEditingPersonnel(null);
+    };
+
+    // Handlers for Delete Modal
+    const handleOpenDeleteModal = (p: Personnel) => {
+        setPersonnelToDelete(p);
+        setDeleteModalOpen(true);
+    };
+    
+    const handleCloseDeleteModal = () => {
+        setDeleteModalOpen(false);
+        setPersonnelToDelete(null);
+    };
+
+    const confirmDelete = () => {
+        if (personnelToDelete) {
+            dispatch({ type: 'DELETE_PERSONNEL', payload: personnelToDelete.id });
+            handleCloseDeleteModal();
+        }
+    };
+
+    // Handler for Config Modal
     const handleConfigSave = () => {
         dispatch({ type: 'UPDATE_CONFIG', payload: config });
         setConfigModalOpen(false);
-    }
+    };
     
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                  <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Gestion du Personnel</h2>
-                 <button onClick={() => setConfigModalOpen(true)} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                    Configuration de l'établissement
-                </button>
+                 <div className="flex items-center space-x-2">
+                    <button onClick={handleOpenAddModal} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow">
+                        + Ajouter du Personnel
+                    </button>
+                    <button onClick={() => setConfigModalOpen(true)} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        Configuration
+                    </button>
+                 </div>
             </div>
            
 
@@ -61,68 +175,76 @@ const Personnel: React.FC = () => {
                     </nav>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-1">
-                        <h3 className="text-lg font-medium mb-2">Ajouter</h3>
-                        <form onSubmit={handleAddPersonnel} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom:</label>
-                                <input type="text" value={newPersonnel.nom} onChange={e => setNewPersonnel({...newPersonnel, nom: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Rôle:</label>
-                                <input type="text" value={activeTab} className="mt-1 block w-full rounded-md bg-gray-100 dark:bg-gray-900 border-gray-300" disabled />
-                            </div>
-                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Laboratoire:</label>
-                                <input type="text" value={newPersonnel.labo} onChange={e => setNewPersonnel({...newPersonnel, labo: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
-                            </div>
-                            <button type="submit" className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Ajouter</button>
-                        </form>
-                    </div>
-                    <div className="lg:col-span-2">
-                         <h3 className="text-lg font-medium mb-2">Liste</h3>
-                         <div className="overflow-x-auto border rounded-lg">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rôle</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Labo</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {filteredPersonnel.map(p => (
-                                        <tr key={p.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">{p.id}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{p.nom}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">{p.role}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">{p.labo}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                         </div>
-                    </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laboratoire / Matière</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {filteredPersonnel.map(p => (
+                                <tr key={p.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{p.nom}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">{p.labo}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
+                                        <button onClick={() => handleOpenEditModal(p)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Modifier</button>
+                                        <button onClick={() => handleOpenDeleteModal(p)} className="font-medium text-danger hover:underline">Supprimer</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {filteredPersonnel.length === 0 && (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                           Aucun personnel à afficher dans cette catégorie.
+                        </div>
+                    )}
                 </div>
             </div>
             
             <Modal isOpen={isConfigModalOpen} onClose={() => setConfigModalOpen(false)} title="Configuration de l'établissement">
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Direction Régionale:</label>
-                        <input type="text" value={config.region} onChange={e => setConfig({...config, region: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom du Lycée:</label>
-                        <input type="text" value={config.school_name} onChange={e => setConfig({...config, school_name: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
+                    <FormField label="Direction Régionale" htmlFor="region">
+                        <input type="text" id="region" value={config.region} onChange={e => setConfig({...config, region: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
+                    </FormField>
+                    <FormField label="Nom du Lycée" htmlFor="school_name">
+                        <input type="text" id="school_name" value={config.school_name} onChange={e => setConfig({...config, school_name: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600" />
+                    </FormField>
                     <div className="pt-4 flex justify-end">
                         <button onClick={handleConfigSave} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Enregistrer</button>
                     </div>
                 </div>
             </Modal>
+            
+            <Modal isOpen={isFormModalOpen} onClose={handleCloseFormModal} title={editingPersonnel ? 'Modifier Personnel' : 'Ajouter Personnel'}>
+                <PersonnelForm personnel={editingPersonnel} onDone={handleCloseFormModal} activeRole={activeTab} />
+            </Modal>
+            
+            <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal} title="Confirmer la suppression">
+                <div className="space-y-6">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Êtes-vous sûr de vouloir supprimer définitivement <span className="font-semibold text-gray-800 dark:text-gray-200">{personnelToDelete?.nom}</span> ? Cette action est irréversible.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={handleCloseDeleteModal}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="px-4 py-2 bg-danger text-white font-semibold rounded-lg hover:bg-red-700"
+                        >
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
         </div>
     );
 };

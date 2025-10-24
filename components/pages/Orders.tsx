@@ -1,10 +1,49 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { OrderStatus } from '../../types';
+import { Order, OrderStatus } from '../../types';
+import Modal from '../ui/Modal';
+import OrderForm from '../features/OrderForm';
 
 const Orders: React.FC = () => {
-    const { state } = useData();
+    const { state, dispatch } = useData();
+    
+    const [isFormModalOpen, setFormModalOpen] = useState(false);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+    
+    const handleOpenAddModal = () => {
+        setSelectedOrder(null);
+        setFormModalOpen(true);
+    };
+    
+    const handleOpenEditModal = (order: Order) => {
+        setSelectedOrder(order);
+        setFormModalOpen(true);
+    };
+
+    const handleCloseFormModal = () => {
+        setFormModalOpen(false);
+        setSelectedOrder(null);
+    };
+
+    const handleOpenDeleteModal = (order: Order) => {
+        setOrderToDelete(order);
+        setDeleteModalOpen(true);
+    };
+    
+    const handleCloseDeleteModal = () => {
+        setDeleteModalOpen(false);
+        setOrderToDelete(null);
+    };
+    
+    const confirmDelete = () => {
+        if (orderToDelete) {
+            dispatch({ type: 'DELETE_ORDER', payload: orderToDelete.id });
+            handleCloseDeleteModal();
+        }
+    };
 
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
@@ -26,9 +65,8 @@ const Orders: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Gestion des Commandes</h2>
                 <button
-                    // onClick={() => {}} // TODO: Implement add order modal
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow-md cursor-not-allowed opacity-50"
-                    disabled
+                    onClick={handleOpenAddModal}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow-md"
                 >
                     + Nouvelle Commande
                 </button>
@@ -43,13 +81,13 @@ const Orders: React.FC = () => {
                             <th scope="col" className="px-6 py-3">Date</th>
                             <th scope="col" className="px-6 py-3">Statut</th>
                             <th scope="col" className="px-6 py-3">Articles</th>
-                            <th scope="col" className="px-6 py-3">Actions</th>
+                            <th scope="col" className="px-6 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {state.orders.map(order => (
                             <tr key={order.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{order.id}</td>
+                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{order.id.substring(0,8)}...</td>
                                 <td className="px-6 py-4">{order.supplier}</td>
                                 <td className="px-6 py-4">{new Date(order.orderDate).toLocaleDateString('fr-FR')}</td>
                                 <td className="px-6 py-4">
@@ -58,9 +96,12 @@ const Orders: React.FC = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">{order.items.map(i => `${i.materialName} (x${i.quantity})`).join(', ')}</td>
-                                <td className="px-6 py-4">
-                                    <button className="font-medium text-primary-600 dark:text-primary-500 hover:underline cursor-not-allowed opacity-50" disabled>
-                                        Détails
+                                <td className="px-6 py-4 text-right space-x-2">
+                                    <button onClick={() => handleOpenEditModal(order)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">
+                                        Modifier
+                                    </button>
+                                    <button onClick={() => handleOpenDeleteModal(order)} className="font-medium text-danger hover:underline">
+                                        Supprimer
                                     </button>
                                 </td>
                             </tr>
@@ -73,9 +114,32 @@ const Orders: React.FC = () => {
                     </div>
                 )}
             </div>
-             <div className="text-center p-4 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 rounded-lg">
-                La gestion complète des commandes est en cours de développement.
-            </div>
+            
+            <Modal isOpen={isFormModalOpen} onClose={handleCloseFormModal} title={selectedOrder ? 'Modifier la Commande' : 'Nouvelle Commande'}>
+                <OrderForm order={selectedOrder} onDone={handleCloseFormModal} />
+            </Modal>
+
+            <Modal isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal} title="Confirmer la suppression">
+                 <div className="space-y-6">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Êtes-vous sûr de vouloir supprimer la commande <span className="font-semibold text-gray-800 dark:text-gray-200">{orderToDelete?.id}</span> ? Cette action est irréversible.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={handleCloseDeleteModal}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="px-4 py-2 bg-danger text-white font-semibold rounded-lg hover:bg-red-700"
+                        >
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

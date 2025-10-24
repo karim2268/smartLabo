@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { Reservation, ReservationItem, ReservationStatus, Material } from '../../types';
+import { Reservation, ReservationItem, ReservationStatus, Material, PersonnelRole } from '../../types';
 import Modal from '../ui/Modal';
 import FormField from '../ui/FormField';
 import FormActions from '../ui/FormActions';
@@ -20,6 +20,10 @@ const Reservations: React.FC = () => {
     const [quantityToAdd, setQuantityToAdd] = useState(1);
     const [materialSearchTerm, setMaterialSearchTerm] = useState('');
     
+    const teachers = useMemo(() => 
+        state.personnel.filter(p => p.role === PersonnelRole.ENSEIGNANT)
+    , [state.personnel]);
+
     const resetForm = () => {
         setDemandeur('');
         setDatePrevue('');
@@ -174,7 +178,20 @@ const Reservations: React.FC = () => {
                 <form onSubmit={handleSubmitReservation} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField label="Demandeur" htmlFor="demandeur">
-                            <input type="text" id="demandeur" value={demandeur} onChange={e => setDemandeur(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500" required />
+                            <select 
+                                id="demandeur" 
+                                value={demandeur} 
+                                onChange={e => setDemandeur(e.target.value)} 
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500" 
+                                required
+                            >
+                                <option value="" disabled>Sélectionner un enseignant</option>
+                                {teachers.map(teacher => (
+                                    <option key={teacher.id} value={teacher.nom}>
+                                        {teacher.nom}
+                                    </option>
+                                ))}
+                            </select>
                         </FormField>
                         <FormField label="Date prévue pour le retrait" htmlFor="datePrevue">
                             <input type="date" id="datePrevue" value={datePrevue} onChange={e => setDatePrevue(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500" required />

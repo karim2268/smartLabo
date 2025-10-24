@@ -198,6 +198,7 @@ interface DataContextType {
     state: AppState;
     dispatch: React.Dispatch<Action>;
     getCategoryNameById: (id: string) => string;
+    lowStockItems: Material[];
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -218,8 +219,12 @@ export const DataProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         return category ? category.name : 'Inconnue';
     }, [state.categories]);
 
+    const lowStockItems = useMemo(() =>
+        state.materials.filter(m => m.quantity <= m.alertThreshold),
+    [state.materials]);
+
     return (
-        <DataContext.Provider value={{ state, dispatch, getCategoryNameById }}>
+        <DataContext.Provider value={{ state, dispatch, getCategoryNameById, lowStockItems }}>
             {children}
         </DataContext.Provider>
     );

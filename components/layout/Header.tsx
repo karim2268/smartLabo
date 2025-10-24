@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useData } from '../../contexts/DataContext';
@@ -14,7 +15,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ title, setActivePage }) => {
     const { theme, toggleTheme } = useTheme();
-    const { state, getCategoryNameById } = useData();
+    const { state, getCategoryNameById, lowStockItems } = useData();
 
     const handlePrintInventory = () => {
         const doc = new jsPDF();
@@ -72,6 +73,18 @@ const Header: React.FC<HeaderProps> = ({ title, setActivePage }) => {
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3 1h10v1H5V6zm0 2h10v1H5V8zm0 2h10v1H5v-1zm0 2h6v1H5v-1z" clipRule="evenodd" /></svg>
                     Importer Stock
                 </button>
+                 {lowStockItems.length > 0 && (
+                    <button
+                        onClick={() => setActivePage('inventory')}
+                        className="relative flex items-center px-3 py-2 bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 rounded-md text-sm font-bold text-yellow-800 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900 animate-pulse"
+                        title="Cliquez pour voir les articles en stock faible"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 12.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                        </svg>
+                        {lowStockItems.length} Alerte(s)
+                    </button>
+                )}
                 <button
                     onClick={toggleTheme}
                     className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"

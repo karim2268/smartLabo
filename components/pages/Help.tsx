@@ -59,6 +59,30 @@ const Help: React.FC = () => {
                      <p>3. Dans la fenêtre qui s'ouvre, choisissez le type de mouvement ("Entrée" ou "Sortie"), la quantité et ajoutez une note si nécessaire.</p>
                      <p>4. Cliquez sur <strong>"Valider"</strong>. Le stock sera mis à jour automatiquement et le mouvement sera enregistré dans le journal.</p>
                  </FAQItem>
+
+                 <FAQItem question="Comment importer des articles depuis un fichier Excel ?">
+                    <p>Pour ajouter ou mettre à jour plusieurs articles simultanément, vous pouvez utiliser la fonction d'importation depuis un fichier Excel, accessible via le bouton <strong>"Importer Stock"</strong> dans l'en-tête.</p>
+                    <p className="mt-2">Votre fichier Excel doit avoir une feuille où la première ligne contient les en-têtes de colonnes. Voici la structure requise :</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1 pl-4">
+                        <li><strong>num_fiche</strong> : Le numéro de fiche (ex: <code>P01</code>).</li>
+                        <li><strong>name</strong> : La désignation de l'article (ex: <code>Bécher 250ml</code>). <span className="font-bold text-danger">(Obligatoire)</span></li>
+                        <li><strong>categoryName</strong> : Le nom exact de la catégorie (ex: <code>Matériels Chimie</code>). <span className="font-bold text-danger">(Obligatoire)</span></li>
+                        <li><strong>quantity</strong> : La quantité en stock (ex: <code>20</code>). <span className="font-bold text-danger">(Obligatoire)</span></li>
+                        <li><strong>alertThreshold</strong> : Le seuil d'alerte (ex: <code>5</code>). <span className="font-bold text-danger">(Obligatoire)</span></li>
+                        <li><strong>unit</strong> : L'unité de mesure (ex: <code>Unité(s)</code>, <code>L</code>, <code>kg</code>...).</li>
+                        <li><strong>location</strong> : L'emplacement (ex: <code>Armoire A1</code>).</li>
+                        <li><strong>brand</strong> : La marque ou le modèle (ex: <code>Pyrex</code>).</li>
+                        <li><strong>description</strong> : Une courte description.</li>
+                        <li><strong>etat</strong> : L'état du matériel (<code>Neuf</code>, <code>Bon</code>, <code>À réparer</code>, <code>Hors service</code>).</li>
+                        <li><strong>observation</strong> : Toute note ou observation pertinente.</li>
+                    </ul>
+                    <p className="mt-4 font-semibold">Points importants :</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1 pl-4">
+                        <li>Le nom de la colonne <strong>categoryName</strong> doit correspondre exactement à une catégorie existante dans l'application. Vous pouvez voir la liste des catégories disponibles dans le filtre de la page "Stock".</li>
+                        <li>L'ordre des colonnes n'a pas d'importance, mais les noms des en-têtes doivent être exacts.</li>
+                        <li>Si un article avec un <code>num_fiche</code> existant est trouvé, il sera mis à jour. Sinon, un nouvel article sera créé.</li>
+                    </ul>
+                 </FAQItem>
                  
                  <FAQItem question="Comment générer un inventaire en PDF ?">
                      <p>Il y a deux façons simples :</p>
@@ -71,7 +95,7 @@ const Help: React.FC = () => {
                  </FAQItem>
                  
                  <FAQItem question="Où puis-je modifier les informations de l'établissement ?">
-                     <p>Allez dans la section <strong>"Gestion du personnel"</strong>, puis cliquez sur le bouton <strong>"Configuration de l'établissement"</strong>. Vous pourrez y modifier le nom du lycée et la direction régionale, informations qui apparaîtront sur les rapports PDF.</p>
+                     <p>Allez dans la section <strong>"Gestion du personnel"</strong>, puis cliquez sur le bouton <strong>"Configuration"</strong>. Vous pourrez y modifier le nom du lycée et la direction régionale, informations qui apparaîtront sur les rapports PDF.</p>
                  </FAQItem>
             </div>
         </div>

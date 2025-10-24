@@ -6,9 +6,11 @@ import MaterialForm from '../features/MaterialForm';
 import StockMovementForm from '../features/StockMovementForm';
 
 const Inventory: React.FC = () => {
-    const { state, dispatch, getCategoryNameById } = useData();
+    const { state, dispatch, getCategoryNameById, lowStockItems } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isStockModalOpen, setStockModalOpen] = useState(false);
     const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -17,6 +19,10 @@ const Inventory: React.FC = () => {
 
     const filteredMaterials = useMemo(() => {
         return state.materials.filter(material => {
+            if (showLowStockOnly && material.quantity > material.alertThreshold) {
+                return false;
+            }
+
             const categoryName = getCategoryNameById(material.categoryId).toLowerCase();
             const search = searchTerm.toLowerCase();
             
@@ -28,7 +34,7 @@ const Inventory: React.FC = () => {
 
             return matchesCategory && matchesSearch;
         }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [state.materials, searchTerm, categoryFilter, getCategoryNameById]);
+    }, [state.materials, searchTerm, categoryFilter, getCategoryNameById, showLowStockOnly]);
 
 
     const handleEdit = (material: Material) => {
@@ -76,32 +82,48 @@ const Inventory: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-3/4">
-                    <input
-                        type="text"
-                        placeholder="Rechercher par désignation, N° fiche, emplacement..."
-                        className="w-full sm:w-1/2 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <select 
-                        className="w-full sm:w-1/2 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-3/4">
+                        <input
+                            type="text"
+                            placeholder="Rechercher par désignation, N° fiche, emplacement..."
+                            className="w-full sm:w-1/2 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <select 
+                            className="w-full sm:w-1/2 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                        >
+                            <option value="all">Toutes les catégories</option>
+                            {state.categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                     <button 
+                        onClick={handleOpenAddModal}
+                        className="w-full sm:w-auto px-5 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition shadow"
                     >
-                        <option value="all">Toutes les catégories</option>
-                        {state.categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
+                        + Ajouter un Article
+                    </button>
                 </div>
-                 <button 
-                    onClick={handleOpenAddModal}
-                    className="w-full sm:w-auto px-5 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition shadow"
-                >
-                    + Ajouter un Article
-                </button>
+                 {lowStockItems.length > 0 && (
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <button
+                            onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                            className={`w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg transition ${
+                                showLowStockOnly
+                                    ? 'bg-yellow-500 text-white'
+                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                            }`}
+                        >
+                            Afficher le stock faible ({lowStockItems.length})
+                        </button>
+                    </div>
+                )}
             </div>
             
             <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg">
@@ -121,7 +143,7 @@ const Inventory: React.FC = () => {
                         {filteredMaterials.map(material => {
                              const isLowStock = material.quantity <= material.alertThreshold;
                              return (
-                                <tr key={material.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <tr key={material.id} className={`bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 ${isLowStock ? 'bg-red-50/50 dark:bg-red-900/10' : ''}`}>
                                     <td className="px-6 py-4">{material.num_fiche}</td>
                                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">{material.name}</th>
                                     <td className="px-6 py-4">{getCategoryNameById(material.categoryId)}</td>

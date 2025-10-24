@@ -1,12 +1,15 @@
-
 import React, { useMemo } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData, useData as useDataHook } from '../../contexts/DataContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Category, MovementType } from '../../types';
+import { MovementType } from '../../types';
+import { Page } from '../../App';
 
-// FIX: Changed JSX.Element to React.ReactElement to avoid namespace issue.
-const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactElement; color: string }> = ({ title, value, icon, color }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex items-center space-x-4">
+interface DashboardProps {
+    setActivePage: (page: Page) => void;
+}
+
+const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactElement; color: string; onClick?: () => void }> = ({ title, value, icon, color, onClick }) => (
+    <div onClick={onClick} className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex items-center space-x-4 ${onClick ? 'cursor-pointer hover:shadow-2xl hover:scale-105 transition-transform duration-200' : ''}`}>
         <div className={`p-3 rounded-full ${color}`}>
             {icon}
         </div>
@@ -17,8 +20,8 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
     </div>
 );
 
-const Dashboard: React.FC = () => {
-    const { state } = useData();
+const Dashboard: React.FC<DashboardProps> = ({ setActivePage }) => {
+    const { state, getCategoryNameById } = useData();
     const { materials, movements } = state;
 
     const totalItems = useMemo(() => materials.length, [materials]);
@@ -27,12 +30,13 @@ const Dashboard: React.FC = () => {
     
     const categoriesCount = useMemo(() => {
         const counts = materials.reduce((acc, material) => {
-            acc[material.category] = (acc[material.category] || 0) + 1;
+            const catName = getCategoryNameById(material.categoryId);
+            acc[catName] = (acc[catName] || 0) + 1;
             return acc;
-        }, {} as Record<Category, number>);
+        }, {} as Record<string, number>);
 
         return Object.entries(counts).map(([name, value]) => ({ name, value }));
-    }, [materials]);
+    }, [materials, getCategoryNameById]);
     
     const recentMovements = useMemo(() => movements.slice(0, 5), [movements]);
 
@@ -45,8 +49,8 @@ const Dashboard: React.FC = () => {
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <StatCard title="Articles Totaux" value={totalItems} icon={ICONS.box} color="bg-primary-500" />
-                <StatCard title="Articles en Stock Faible" value={lowStockItems} icon={ICONS.alert} color={lowStockItems > 0 ? "bg-danger" : "bg-warning"} />
+                <StatCard title="Articles Totaux" value={totalItems} icon={ICONS.box} color="bg-primary-500" onClick={() => setActivePage('inventory')} />
+                <StatCard title="Articles en Stock Faible" value={lowStockItems} icon={ICONS.alert} color={lowStockItems > 0 ? "bg-danger" : "bg-warning"} onClick={() => setActivePage('inventory')} />
                 <StatCard title="Quantité Totale" value={totalQuantity} icon={ICONS.sum} color="bg-success" />
             </div>
 
@@ -58,7 +62,7 @@ const Dashboard: React.FC = () => {
                             <BarChart data={categoriesCount} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-gray-200 dark:stroke-gray-700" />
                                 <XAxis dataKey="name" tick={{ fill: 'rgb(107 114 128)' }} className="text-xs" />
-                                <YAxis tick={{ fill: 'rgb(107 114 128)' }} />
+                                <YAxis tick={{ fill: 'rgb(107 114 128)' }} allowDecimals={false} />
                                 <Tooltip
                                   contentStyle={{
                                       backgroundColor: 'rgba(31, 41, 55, 0.8)',
@@ -68,7 +72,6 @@ const Dashboard: React.FC = () => {
                                   }}
                                   cursor={{ fill: 'rgba(107, 114, 128, 0.1)' }}
                                 />
-                                <Legend />
                                 <Bar dataKey="value" name="Nombre d'articles" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -87,7 +90,7 @@ const Dashboard: React.FC = () => {
                                 <div className={`px-3 py-1 text-sm rounded-full font-medium ${
                                     mov.type === MovementType.ENTREE ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
                                 }`}>
-                                    {mov.type === MovementType.ENTREE ? '+' : '-'}{Math.abs(mov.quantity)}
+                                    {mov.type === MovementType.ENTREE ? '+' : '-'}{mov.quantity}
                                 </div>
                             </div>
                         )) : <p className="text-gray-500 dark:text-gray-400">Aucun mouvement récent.</p>}

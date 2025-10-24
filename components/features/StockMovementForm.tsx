@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { Material, MovementType } from '../../types';
+import FormField from '../ui/FormField';
+import FormActions from '../ui/FormActions';
 
 interface StockMovementFormProps {
     material: Material;
@@ -22,7 +24,6 @@ const StockMovementForm: React.FC<StockMovementFormProps> = ({ material, onDone 
         } else if (movementType === MovementType.SORTIE) {
             newQuantity -= quantity;
         } else {
-            // For 'Ajustement', the entered quantity is the new total
             newQuantity = quantity;
         }
 
@@ -57,9 +58,9 @@ const StockMovementForm: React.FC<StockMovementFormProps> = ({ material, onDone 
             <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Stock actuel: <span className="font-bold text-lg text-primary-600 dark:text-primary-400">{material.quantity} {material.unit}</span></p>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type de Mouvement</label>
+            <FormField label="Type de Mouvement" htmlFor="movementType">
                 <select 
+                    id="movementType"
                     value={movementType} 
                     onChange={(e) => setMovementType(e.target.value as MovementType)} 
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
@@ -68,12 +69,10 @@ const StockMovementForm: React.FC<StockMovementFormProps> = ({ material, onDone 
                     <option value={MovementType.ENTREE}>Entrée</option>
                     <option value={MovementType.AJUSTEMENT}>Ajustement (Nouvelle quantité totale)</option>
                 </select>
-            </div>
-            <div>
-                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {movementType === MovementType.AJUSTEMENT ? "Nouvelle Quantité Totale" : "Quantité"}
-                </label>
+            </FormField>
+            <FormField label={movementType === MovementType.AJUSTEMENT ? "Nouvelle Quantité Totale" : "Quantité"} htmlFor="quantity">
                 <input 
+                    id="quantity"
                     type="number" 
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
@@ -81,21 +80,19 @@ const StockMovementForm: React.FC<StockMovementFormProps> = ({ material, onDone 
                     min="0"
                     required
                 />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes / Motif</label>
+            </FormField>
+            <FormField label="Notes / Motif" htmlFor="notes">
                  <textarea 
+                    id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3} 
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
                     placeholder="Ex: TP de physique 2ème année, Réception commande..."
                  ></textarea>
-            </div>
-             <div className="pt-4 flex justify-end space-x-2">
-                <button type="button" onClick={onDone} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Annuler</button>
-                <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Valider</button>
-            </div>
+            </FormField>
+            
+            <FormActions onCancel={onDone} submitLabel="Valider" />
         </form>
     );
 };

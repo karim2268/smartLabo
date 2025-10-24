@@ -11,6 +11,8 @@ const Inventory: React.FC = () => {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isStockModalOpen, setStockModalOpen] = useState(false);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
     const filteredMaterials = useMemo(() => {
@@ -34,10 +36,22 @@ const Inventory: React.FC = () => {
         setAddModalOpen(true);
     };
 
-    const handleDelete = (id: string) => {
-        if (window.confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) {
-            dispatch({ type: 'DELETE_MATERIAL', payload: id });
+    const handleDeleteClick = (material: Material) => {
+        setMaterialToDelete(material);
+        setDeleteModalOpen(true);
+    };
+    
+    const confirmDelete = () => {
+        if (materialToDelete) {
+            dispatch({ type: 'DELETE_MATERIAL', payload: materialToDelete.id });
+            setDeleteModalOpen(false);
+            setMaterialToDelete(null);
         }
+    };
+
+    const cancelDelete = () => {
+        setDeleteModalOpen(false);
+        setMaterialToDelete(null);
     };
     
     const handleOpenStockModal = (material: Material) => {
@@ -120,7 +134,7 @@ const Inventory: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap space-x-2">
                                         <button onClick={() => handleOpenStockModal(material)} className="font-medium text-green-600 dark:text-green-500 hover:underline">Stock</button>
                                         <button onClick={() => handleEdit(material)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Modifier</button>
-                                        <button onClick={() => handleDelete(material.id)} className="font-medium text-danger hover:underline">Supprimer</button>
+                                        <button onClick={() => handleDeleteClick(material)} className="font-medium text-danger hover:underline">Supprimer</button>
                                     </td>
                                 </tr>
                              );
@@ -140,6 +154,28 @@ const Inventory: React.FC = () => {
             
              <Modal isOpen={isStockModalOpen} onClose={handleCloseStockModal} title={`Gérer le stock de ${selectedMaterial?.name}`}>
                 {selectedMaterial && <StockMovementForm material={selectedMaterial} onDone={handleCloseStockModal} />}
+            </Modal>
+
+            <Modal isOpen={isDeleteModalOpen} onClose={cancelDelete} title="Confirmer la suppression">
+                <div className="space-y-6">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Êtes-vous sûr de vouloir supprimer définitivement l'article <span className="font-semibold text-gray-800 dark:text-gray-200">{materialToDelete?.name}</span> ? Cette action est irréversible.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={cancelDelete}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="px-4 py-2 bg-danger text-white font-semibold rounded-lg hover:bg-red-700"
+                        >
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

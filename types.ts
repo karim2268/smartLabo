@@ -1,20 +1,17 @@
-import { Page } from './App';
 
 export enum Unit {
-    UNITE = 'Unité',
-    BOITE = 'Boîte',
-    FLACON = 'Flacon',
-    LITRE = 'Litre',
-    GRAMME = 'Gramme',
-    METRE = 'Mètre',
+    UNITE = "Unité(s)",
+    LITRE = "L",
+    MILLILITRE = "mL",
+    KILOGRAMME = "kg",
+    GRAMME = "g",
+    MILLIGRAMME = "mg",
+    BOITE = "Boîte(s)",
+    FLACON = "Flacon(s)",
+    PIECE = "Pièce(s)",
 }
 
-export interface Category {
-    id: string;
-    name: string;
-}
-
-export interface Material {
+export type Material = {
     id: string;
     num_fiche: string;
     name: string;
@@ -23,21 +20,21 @@ export interface Material {
     categoryId: string;
     quantity: number;
     unit: Unit;
+    location: string;
     etat: 'Neuf' | 'Bon' | 'À réparer' | 'Hors service';
     observation: string;
-    alertThreshold: number;
-    location: string; 
     date_saisie: string;
     date_modification: string;
-}
+    alertThreshold: number;
+};
 
 export enum MovementType {
-    ENTREE = 'Entrée',
-    SORTIE = 'Sortie',
-    AJUSTEMENT = 'Ajustement',
+    ENTREE = "Entrée",
+    SORTIE = "Sortie",
+    AJUSTEMENT = "Ajustement",
 }
 
-export interface Movement {
+export type Movement = {
     id: string;
     materialId: string;
     materialName: string;
@@ -45,80 +42,79 @@ export interface Movement {
     quantity: number;
     date: string;
     notes: string;
-}
+};
 
-export enum PersonnelRole {
-    TECHNICIEN = 'Personnel de laboratoire',
-    ENSEIGNANT = 'Enseignant',
-}
-
-export interface Personnel {
-    id: string;
-    nom: string;
-    role: PersonnelRole;
-    labo: string;
-}
-
-export interface Room {
+export type Category = {
     id: string;
     name: string;
-}
-
-export interface Lab {
-    id: string;
-    name: string;
-}
-
-export interface AppConfiguration {
-    region: string;
-    school_name: string;
-}
+};
 
 export enum OrderStatus {
-    EN_ATTENTE = 'En attente',
-    COMMANDE = 'Commandé',
-    RECU = 'Reçu',
-    ANNULE = 'Annulé',
+    EN_ATTENTE = "En attente",
+    COMMANDE = "Commandé",
+    RECU = "Reçu",
+    ANNULE = "Annulé",
 }
 
-export interface OrderItem {
+export type OrderItem = {
     materialId: string;
     materialName: string;
     quantity: number;
-}
+};
 
-export interface Order {
+export type Order = {
     id: string;
     supplier: string;
-    items: OrderItem[];
     orderDate: string;
     status: OrderStatus;
+    items: OrderItem[];
+};
+
+export enum PersonnelRole {
+    TECHNICIEN = "Technicien de laboratoire",
+    ENSEIGNANT = "Enseignant",
 }
+
+export type Personnel = {
+    id: string;
+    nom: string;
+    role: PersonnelRole;
+    labo: string; // Laboratory or subject
+};
+
+export type Room = {
+    id: string;
+    name: string;
+};
+
+export type Lab = {
+    id: string;
+    name: string;
+};
+
+export type Configuration = {
+    school_name: string;
+    region: string;
+};
+
+export type ReservationItem = {
+    materialId: string;
+    quantity: number;
+};
 
 export enum ReservationStatus {
-    EN_ATTENTE = 'En attente',
-    CONFIRMEE = 'Confirmée',
-    REFUSEE = 'Refusée',
+    EN_ATTENTE = "En attente",
+    VALIDEE = "Validée",
+    REFUSEE = "Refusée",
+    RETIREE = "Retirée",
 }
 
-export interface Reservation {
+export type Reservation = {
     id: string;
-    personnelId: string;
-    salle: string;
-    date: string;
-    heure: string;
-    materiels: string;
+    demandeur: string;
+    date_demande: string;
+    date_prevue: string;
     status: ReservationStatus;
-}
-
-export interface AppState {
-    materials: Material[];
-    categories: Category[];
-    movements: Movement[];
-    personnel: Personnel[];
-    rooms: Room[];
-    labs: Lab[];
-    configuration: AppConfiguration;
-    orders: Order[];
-    reservations: Reservation[];
-}
+    materiels: ReservationItem[];
+    notes: string;
+};

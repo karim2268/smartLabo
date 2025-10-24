@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -7,6 +7,8 @@ import { Material, Movement } from '../../types';
 
 const Reports: React.FC = () => {
     const { state, getCategoryNameById } = useData();
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const generateInventoryPDF = () => {
         const doc = new jsPDF();
@@ -80,12 +82,68 @@ const Reports: React.FC = () => {
         }));
     };
 
+    const getFilteredMovements = () => {
+        return state.movements.filter(mov => {
+            const moveDate = new Date(mov.date);
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+
+            if (start) start.setHours(0, 0, 0, 0);
+            if (end) end.setHours(23, 59, 59, 999);
+
+            if (start && moveDate < start) return false;
+            if (end && moveDate > end) return false;
+            return true;
+        });
+    };
+
+    const handleGenerateMovementsPDF = () => {
+        const doc = new jsPDF();
+        const movements = getFilteredMovements();
+        const { configuration } = state;
+
+        doc.setFontSize(18);
+        doc.text(configuration.school_name, 105, 15, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(`Historique des Mouvements - ${configuration.region}`, 105, 22, { align: 'center' });
+        doc.setFontSize(10);
+        if (startDate || endDate) {
+            doc.text(`Période du ${startDate ? new Date(startDate).toLocaleDateString('fr-FR') : 'début'} au ${endDate ? new Date(endDate).toLocaleDateString('fr-FR') : "aujourd'hui"}`, 14, 30);
+        } else {
+            doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+        }
+
+        const tableColumn = ["Date", "Article", "Type", "Quantité", "Notes"];
+        const tableRows = movements.map(mov => [
+            new Date(mov.date).toLocaleString('fr-FR'),
+            mov.materialName,
+            mov.type,
+            mov.quantity.toString(),
+            mov.notes,
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 35,
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185] }
+        });
+
+        doc.save(`historique_mouvements_${Date.now()}.pdf`);
+    };
+
+    const handleExportMovementsExcel = () => {
+        const movements = getFilteredMovements();
+        exportToExcel(prepareMovementsForExport(movements), `historique_mouvements_${Date.now()}`);
+    };
+
     return (
         <div className="space-y-6">
             <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Génération de Rapports</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h3 className="text-xl font-semibold mb-4">Inventaire Complet</h3>
+                    <h3 className="text-xl font-semibold mb-4">Inventaire Complet (PDF)</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">Générer un rapport PDF de tous les articles en stock.</p>
                     <button
                         onClick={generateInventoryPDF}
@@ -96,7 +154,7 @@ const Reports: React.FC = () => {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h3 className="text-xl font-semibold mb-4">Export Inventaire (Excel)</h3>
+                    <h3 className="text-xl font-semibold mb-4">Inventaire Complet (Excel)</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-6">Exporter la liste complète des articles au format Excel.</p>
                     <button
                         onClick={() => exportToExcel(prepareMaterialsForExport(state.materials), 'inventaire_complet')}
@@ -105,13 +163,31 @@ const Reports: React.FC = () => {
                         Exporter Excel
                     </button>
                 </div>
-                
-                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h3 className="text-xl font-semibold mb-4">Export Mouvements (Excel)</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">Exporter l'historique de tous les mouvements de stock.</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg mt-6">
+                <h3 className="text-xl font-semibold mb-4">Historique des Mouvements par Période</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">Sélectionnez une plage de dates pour générer un rapport des mouvements de stock. Laissez vide pour inclure tous les mouvements.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de début</label>
+                        <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500" />
+                    </div>
+                    <div>
+                        <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de fin</label>
+                        <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 focus:border-primary-500 focus:ring-primary-500" />
+                    </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 mt-4">
                     <button
-                        onClick={() => exportToExcel(prepareMovementsForExport(state.movements), 'historique_mouvements')}
-                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                        onClick={handleGenerateMovementsPDF}
+                        className="w-full sm:w-auto flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+                    >
+                        Générer PDF
+                    </button>
+                    <button
+                        onClick={handleExportMovementsExcel}
+                        className="w-full sm:w-auto flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                     >
                         Exporter Excel
                     </button>

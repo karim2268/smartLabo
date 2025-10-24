@@ -1,17 +1,8 @@
-
 import React from 'react';
 import { useData } from '../../contexts/DataContext';
-// FIX: Changed to a named import to resolve module augmentation issues.
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-
-// Extend the jsPDF type
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 const Reports: React.FC = () => {
     const { state } = useData();
@@ -37,7 +28,7 @@ const Reports: React.FC = () => {
             tableRows.push(materialData);
         });
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 30,

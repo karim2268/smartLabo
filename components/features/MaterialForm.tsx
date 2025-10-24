@@ -18,7 +18,8 @@ const MaterialForm: React.FC<MaterialFormProps> = ({ material, onDone }) => {
         brand: '',
         categoryId: state.categories[0]?.id || '',
         quantity: 0,
-        etat: 'Bon' as const,
+        // FIX: Widen the type of 'etat' to match the Material interface, fixing the type error when setting form data.
+        etat: 'Bon' as Material['etat'],
         observation: '',
         alertThreshold: 5,
         unit: Unit.UNITE,

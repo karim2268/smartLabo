@@ -10,7 +10,8 @@ interface SidebarProps {
 interface NavItemProps {
     page: Page;
     label: string;
-    icon: React.ReactElement;
+    // FIX: Specify a generic type for the icon's props to allow `className` to be passed via `cloneElement`.
+    icon: React.ReactElement<any>;
     isActive: boolean;
     onClick: () => void;
 }

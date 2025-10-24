@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { AppState, Material, Movement, Category, Personnel, Room, Lab, AppConfiguration, Unit, MovementType, PersonnelRole, Order, OrderStatus, Reservation, ReservationStatus } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 
@@ -129,16 +129,24 @@ export const DataProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         setStoredState(state);
     }, [state, setStoredState]);
 
-    const getCategoryNameById = (id: string) => {
+    const getCategoryNameById = useCallback((id: string) => {
         return state.categories.find(c => c.id === id)?.name || 'Inconnue';
-    }
+    }, [state.categories]);
     
-    const getPersonnelNameById = (id: string) => {
+    const getPersonnelNameById = useCallback((id: string) => {
         return state.personnel.find(p => p.id === id)?.nom || 'Inconnu';
-    }
+    }, [state.personnel]);
+
+    const contextValue = useMemo(() => ({
+        state,
+        dispatch,
+        getCategoryNameById,
+        getPersonnelNameById
+    }), [state, getCategoryNameById, getPersonnelNameById]);
+
 
     return (
-        <DataContext.Provider value={{ state, dispatch, getCategoryNameById, getPersonnelNameById }}>
+        <DataContext.Provider value={contextValue}>
             {children}
         </DataContext.Provider>
     );

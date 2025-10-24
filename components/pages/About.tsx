@@ -23,6 +23,9 @@ const About: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-8 max-w-4xl mx-auto">
             <div className="text-center">
                  <h1 className="text-4xl font-bold text-primary-600 dark:text-primary-400">SmartLabo</h1>
+                 
+                 <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Copyright Abdelkrim Salem</p>
+                 <p className="text-sm text-gray-500 dark:text-gray-400">Lycée Ibn-Khaldoun Oudref</p>
                  <p className="mt-2 text-xl text-gray-600 dark:text-gray-300">La solution intelligente pour la gestion des laboratoires de sciences au lycée.</p>
             </div>
 

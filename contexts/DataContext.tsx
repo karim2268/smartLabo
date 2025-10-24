@@ -92,6 +92,8 @@ type Action =
     | { type: 'ADD_MOVEMENT'; payload: Movement }
     | { type: 'ADD_RESERVATION'; payload: Reservation }
     | { type: 'UPDATE_RESERVATION_STATUS'; payload: { id: string; status: ReservationStatus } }
+    | { type: 'DELETE_RESERVATION'; payload: string }
+    | { type: 'RESET_RESERVATIONS' }
     | { type: 'ADD_PERSONNEL'; payload: Personnel }
     | { type: 'UPDATE_PERSONNEL'; payload: Personnel }
     | { type: 'DELETE_PERSONNEL'; payload: string }
@@ -135,6 +137,13 @@ const dataReducer = (state: AppState, action: Action): AppState => {
                     r.id === action.payload.id ? { ...r, status: action.payload.status } : r
                 ),
             };
+        case 'DELETE_RESERVATION':
+            return {
+                ...state,
+                reservations: state.reservations.filter(r => r.id !== action.payload),
+            };
+        case 'RESET_RESERVATIONS':
+            return { ...state, reservations: [] };
         case 'ADD_PERSONNEL':
             return { ...state, personnel: [...state.personnel, action.payload] };
         case 'UPDATE_PERSONNEL':

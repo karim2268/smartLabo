@@ -8,6 +8,9 @@ import FormActions from '../ui/FormActions';
 const Reservations: React.FC = () => {
     const { state, dispatch } = useData();
     const [isModalOpen, setModalOpen] = useState(false);
+    const [isResetModalOpen, setResetModalOpen] = useState(false);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [reservationToDelete, setReservationToDelete] = useState<Reservation | null>(null);
     
     // New Reservation Form State
     const [demandeur, setDemandeur] = useState('');
@@ -129,16 +132,50 @@ const Reservations: React.FC = () => {
         return state.materials.find(m => m.id === selectedMaterialId);
     }, [selectedMaterialId, state.materials]);
 
+    const handleConfirmReset = () => {
+        dispatch({ type: 'RESET_RESERVATIONS' });
+        setResetModalOpen(false);
+    };
+
+    const handleDeleteClick = (reservation: Reservation) => {
+        setReservationToDelete(reservation);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (reservationToDelete) {
+            dispatch({ type: 'DELETE_RESERVATION', payload: reservationToDelete.id });
+            setDeleteModalOpen(false);
+            setReservationToDelete(null);
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteModalOpen(false);
+        setReservationToDelete(null);
+    };
+
+
     return (
          <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Réservations</h2>
-                <button
-                    onClick={handleOpenModal}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow-md"
-                >
-                    + Nouvelle Réservation
-                </button>
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={handleOpenModal}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition shadow-md"
+                    >
+                        + Nouvelle Réservation
+                    </button>
+                     {state.reservations.length > 0 && (
+                        <button
+                            onClick={() => setResetModalOpen(true)}
+                            className="px-4 py-2 bg-red-100 text-danger rounded-lg hover:bg-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60 transition"
+                        >
+                            Réinitialiser
+                        </button>
+                    )}
+                </div>
             </div>
              <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg">
                 <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -148,6 +185,7 @@ const Reservations: React.FC = () => {
                             <th scope="col" className="px-6 py-3">Date Prévue</th>
                             <th scope="col" className="px-6 py-3">Matériels Demandés</th>
                             <th scope="col" className="px-6 py-3">Notes</th>
+                            <th scope="col" className="px-6 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -163,6 +201,14 @@ const Reservations: React.FC = () => {
                                     </ul>
                                 </td>
                                 <td className="px-6 py-4">{res.notes}</td>
+                                <td className="px-6 py-4 text-right">
+                                    <button
+                                        onClick={() => handleDeleteClick(res)}
+                                        className="font-medium text-danger hover:underline"
+                                    >
+                                        Supprimer
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -269,6 +315,50 @@ const Reservations: React.FC = () => {
                     
                     <FormActions onCancel={handleCloseModal} submitLabel="Soumettre la demande" />
                 </form>
+            </Modal>
+
+            <Modal isOpen={isResetModalOpen} onClose={() => setResetModalOpen(false)} title="Confirmer la réinitialisation">
+                <div className="space-y-6">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Êtes-vous sûr de vouloir supprimer définitivement toutes les réservations ? Cette action est irréversible.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={() => setResetModalOpen(false)}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleConfirmReset}
+                            className="px-4 py-2 bg-danger text-white font-semibold rounded-lg hover:bg-red-700"
+                        >
+                            Supprimer Tout
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            
+            <Modal isOpen={isDeleteModalOpen} onClose={handleCancelDelete} title="Confirmer la suppression">
+                <div className="space-y-6">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Êtes-vous sûr de vouloir supprimer la réservation de <span className="font-semibold text-gray-800 dark:text-gray-200">{reservationToDelete?.demandeur}</span> ? Cette action est irréversible.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={handleCancelDelete}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleConfirmDelete}
+                            className="px-4 py-2 bg-danger text-white font-semibold rounded-lg hover:bg-red-700"
+                        >
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

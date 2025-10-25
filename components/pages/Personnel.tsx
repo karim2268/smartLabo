@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { Personnel, PersonnelRole } from '../../types';
+import type { Personnel } from '../../types';
+import { PersonnelRole } from '../../types';
 import Modal from '../ui/Modal';
 import FormField from '../ui/FormField';
 import FormActions from '../ui/FormActions';

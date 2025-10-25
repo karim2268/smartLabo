@@ -22,11 +22,12 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 
 const Dashboard: React.FC<DashboardProps> = ({ setActivePage }) => {
     const { state, getCategoryNameById } = useData();
-    const { materials, movements } = state;
+    const { materials, movements, categories } = state;
 
     const totalItems = useMemo(() => materials.length, [materials]);
     const lowStockItems = useMemo(() => materials.filter(m => m.quantity <= m.alertThreshold).length, [materials]);
     const totalQuantity = useMemo(() => materials.reduce((acc, m) => acc + m.quantity, 0), [materials]);
+    const uniqueCategoriesCount = useMemo(() => categories.length, [categories]);
     
     const categoriesCount = useMemo(() => {
         const counts = materials.reduce((acc, material) => {
@@ -43,20 +44,22 @@ const Dashboard: React.FC<DashboardProps> = ({ setActivePage }) => {
     const ICONS = {
         box: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V7M4 7L12 3l8 4M4 7h16" /></svg>,
         alert: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
-        sum: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 10H6" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v8m0 0v8m0-8h8m-8 0H4" /></svg>
+        sum: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 10H6" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v8m0 0v8m0-8h8m-8 0H4" /></svg>,
+        category: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2m14 0h-2" /></svg>
     };
 
     return (
         <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Articles Totaux" value={totalItems} icon={ICONS.box} color="bg-primary-500" onClick={() => setActivePage('inventory')} />
                 <StatCard title="Articles en Stock Faible" value={lowStockItems} icon={ICONS.alert} color={lowStockItems > 0 ? "bg-danger" : "bg-warning"} onClick={() => setActivePage('inventory')} />
                 <StatCard title="Quantité Totale" value={totalQuantity} icon={ICONS.sum} color="bg-success" />
+                <StatCard title="Catégories Uniques" value={uniqueCategoriesCount} icon={ICONS.category} color="bg-purple-500" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Répartition par Catégorie</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Nombre d'Articles par Catégorie</h3>
                     <div style={{ width: '100%', height: 300 }}>
                         <ResponsiveContainer>
                             <BarChart data={categoriesCount} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>

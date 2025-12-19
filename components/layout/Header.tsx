@@ -1,12 +1,13 @@
 
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useData } from '../../contexts/DataContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Page } from '../../App';
+import { Material, Unit } from '../../types';
 
 interface HeaderProps {
     title: string;
@@ -15,7 +16,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ title, setActivePage }) => {
     const { theme, toggleTheme } = useTheme();
-    const { state, getCategoryNameById, lowStockItems } = useData();
+    const { state, dispatch, getCategoryNameById, lowStockItems } = useData();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePrintInventory = () => {
         const doc = new jsPDF();
@@ -48,17 +50,121 @@ const Header: React.FC<HeaderProps> = ({ title, setActivePage }) => {
 
         doc.save("inventaire_smartlabo.pdf");
     };
-
+    
     const handleImportClick = () => {
-        // This is a placeholder for a more robust import feature.
-        // In a real app, this would open a modal to upload and process the file.
-        alert("La fonctionnalité d'importation est en cours de développement.");
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = e.target?.result;
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+                if (json.length === 0) {
+                    alert("Le fichier Excel est vide ou mal formaté.");
+                    return;
+                }
+
+                let addedCount = 0;
+                let updatedCount = 0;
+                const errors: string[] = [];
+
+                json.forEach((row, index) => {
+                    if (!row.name || !row.categoryName || row.quantity === undefined || row.alertThreshold === undefined) {
+                        errors.push(`Ligne ${index + 2}: Manque une colonne obligatoire (name, categoryName, quantity, alertThreshold).`);
+                        return; // Skip this row
+                    }
+
+                    const category = state.categories.find(c => c.name.trim().toLowerCase() === String(row.categoryName).trim().toLowerCase());
+                    if (!category) {
+                        errors.push(`Ligne ${index + 2}: Catégorie "${row.categoryName}" non trouvée. Veuillez la créer d'abord.`);
+                        return; // Skip this row
+                    }
+
+                    const existingMaterial = (row.num_fiche && String(row.num_fiche).trim() !== '')
+                        ? state.materials.find(m => m.num_fiche === String(row.num_fiche).trim())
+                        : null;
+
+                    const materialData: Omit<Material, 'id' | 'date_saisie' | 'date_modification'> = {
+                        num_fiche: String(row.num_fiche || '').trim(),
+                        name: String(row.name),
+                        description: String(row.description || ''),
+                        brand: String(row.brand || ''),
+                        categoryId: category.id,
+                        quantity: Number(row.quantity) || 0,
+                        unit: Object.values(Unit).includes(row.unit) ? row.unit : Unit.UNITE,
+                        location: String(row.location || ''),
+                        etat: ['Neuf', 'Bon', 'À réparer', 'Hors service'].includes(row.etat) ? row.etat : 'Bon',
+                        observation: String(row.observation || ''),
+                        alertThreshold: Number(row.alertThreshold) || 0,
+                    };
+                    
+                    if (existingMaterial) {
+                        dispatch({
+                            type: 'UPDATE_MATERIAL',
+                            payload: {
+                                ...existingMaterial,
+                                ...materialData,
+                                date_modification: new Date().toISOString()
+                            }
+                        });
+                        updatedCount++;
+                    } else {
+                        dispatch({
+                            type: 'ADD_MATERIAL',
+                            payload: {
+                                ...materialData,
+                                id: `mat-${Date.now()}-${index}`,
+                                date_saisie: new Date().toISOString(),
+                                date_modification: new Date().toISOString()
+                            }
+                        });
+                        addedCount++;
+                    }
+                });
+                
+                let summary = `Importation terminée !\n- Articles ajoutés : ${addedCount}\n- Articles mis à jour : ${updatedCount}`;
+                if (errors.length > 0) {
+                    summary += `\n\nErreurs rencontrées (les lignes suivantes ont été ignorées) :\n${errors.join('\n')}`;
+                }
+                alert(summary);
+
+            } catch (error) {
+                console.error("Erreur lors du traitement du fichier Excel:", error);
+                alert("Une erreur est survenue lors de la lecture du fichier Excel. Assurez-vous qu'il est au bon format.");
+            } finally {
+                if(event.target) {
+                    event.target.value = '';
+                }
+            }
+        };
+
+        reader.onerror = (error) => {
+             console.error("Erreur FileReader:", error);
+             alert("Impossible de lire le fichier.");
+        };
+        reader.readAsArrayBuffer(file);
     };
 
     return (
         <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-sm flex-shrink-0">
             <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">{title}</h1>
             <div className="flex items-center space-x-2 sm:space-x-4">
+                 <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                    accept=".xlsx, .xls"
+                />
                 <button
                     onClick={handlePrintInventory}
                     className="hidden sm:flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
